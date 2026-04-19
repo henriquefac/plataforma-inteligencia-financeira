@@ -11,5 +11,6 @@ def initApp():
         settingsInst.UPLOAD_DIR,
         settingsInst.PROCESS_DIR,
         settingsInst.ENRICH_DIR,
+        settingsInst.METADATA_DIR,
     ]:
         path.mkdir(parents=True, exist_ok=True)

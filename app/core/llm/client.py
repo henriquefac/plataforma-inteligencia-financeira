@@ -19,6 +19,7 @@ class LLMClient:
         if Settings.LLM_PROVIDER == "ollama":
             return Ollama(
                 model=Settings.LLM_MODEL,
+                base_url=Settings.LLM_BASE_URL,
                 request_timeout=120.0,
             )
 
@@ -27,7 +28,8 @@ class LLMClient:
     def _init_embedding(self):
         if Settings.LLM_PROVIDER == "ollama":
             return OllamaEmbedding(
-                model_name=Settings.EMBEDDING_MODEL
+                model_name=Settings.EMBEDDING_MODEL,
+                base_url=Settings.LLM_BASE_URL,
             )
 
         raise ValueError(f"Embedding provider não suportado: {Settings.LLM_PROVIDER}")
