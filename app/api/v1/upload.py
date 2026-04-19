@@ -2,13 +2,14 @@ from fastapi import APIRouter, UploadFile, HTTPException
 
 
 from app.service.ingestion.ingestion import IngestService
-from app.service.process.preprocess import PreProcessService
+from app.service.process import PreProcessService, EnrichService
+
 
 router = APIRouter()
 
 ingest_service = IngestService()
 preprocess_service = PreProcessService()
-
+enric_service = EnrichService()
 
 @router.post("/upload")
 async def upload_file(file: UploadFile):
@@ -18,6 +19,8 @@ async def upload_file(file: UploadFile):
 
         # 2. preprocessamento
         result = preprocess_service.run(data)
+
+        enric_service.run(data)
 
         return {
             "ingestion_id": data.ingestion_id,

@@ -98,14 +98,14 @@ class DataArtifact:
 
     def save_processed(self, df: pd.DataFrame):
         path = self._build_processed_path()
-        df.to_parquet(path)
+        df.to_csv(path)
         self.processed_path = path
         self.status = DataStatus.PROCESSED
         self._save_metadata()
 
     def save_enriched(self, df: pd.DataFrame):
         path = self._build_enriched_path()
-        df.to_parquet(path)
+        df.to_csv(path)
         self.enriched_path = path
         self.status = DataStatus.ENRICHED
         self._save_metadata()
@@ -119,12 +119,12 @@ class DataArtifact:
     def load_processed(self) -> pd.DataFrame:
         if not self.processed_path:
             raise ValueError("Dados processados não disponíveis")
-        return pd.read_parquet(self.processed_path)
+        return pd.read_csv(self.processed_path)
 
     def load_enriched(self) -> pd.DataFrame:
         if not self.enriched_path:
             raise ValueError("Dados enriquecidos não disponíveis")
-        return pd.read_parquet(self.enriched_path)
+        return pd.read_csv(self.enriched_path)
 
     # -------------------------
     # HELPERS
@@ -138,7 +138,7 @@ class DataArtifact:
             raise ValueError(f"Formato não suportado: {path.suffix}")
 
     def _build_processed_path(self) -> Path:
-        return settingsInst.PROCESS_DIR / self.filename.replace(".csv", ".parquet")
+        return settingsInst.PROCESS_DIR / self.filename.replace(".xlsx", ".csv")
 
     def _build_enriched_path(self) -> Path:
-        return settingsInst.ENRICH_DIR / self.filename.replace(".csv", "_enriched.parquet")
+        return settingsInst.ENRICH_DIR / self.filename.replace(".xlsx", ".csv")

@@ -6,7 +6,7 @@ class BaseFeature(ABC):
     feature_name = None
 
     @abstractmethod
-    def discover_values(self, df):
+    def discover_values(self, df: pd.DataFrame, max_retries):
         pass
 
     @abstractmethod

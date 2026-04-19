@@ -7,79 +7,77 @@ from app.service.process.enrichment.analytical.ai.prompts.retry_prompt import (
     generate_retry_prompt
 )
 
-from app.service.process.enrichment.analytical.ai.prompts.recurrence_prompt import (
-    build_recurrence_classification_prompt,
-    build_recurrence_discovery_prompt
+from app.service.process.enrichment.analytical.ai.prompts.service_type_prompt import (
+    build_service_type_discovery_prompt,
+    build_service_type_classification_prompt
 )
 
-from app.service.process.enrichment.analytical.ai.schema.recurrence_schema import (
-    RecurrenceSchema,
+from app.service.process.enrichment.analytical.ai.schema.service_type_schema import (
+    ServiceTypeSchema,
     validate_schema
 )
 
 
-class RecurrenceFeature(BaseFeature):
+class ServiceTypeFeature(BaseFeature):
 
-    feature_name = "recorrencia"
+    feature_name = "tipo_servico"
 
     # -----------------------
-    # 🔹 DISCOVERY COM RETRY
+    # 🔹 DISCOVERY
     # -----------------------
-    def discover_values(self, df: DataFrame, max_retries=3):
+    def discover_values(self, df:DataFrame, max_retries=3):
 
         descs = df["descricao"].dropna().unique()[:50]
-        prompt_base = build_recurrence_discovery_prompt(descs)
+        prompt_base = build_service_type_discovery_prompt(descs)
 
         last_error = None
         last_output = None
 
         for attempt in range(max_retries):
 
-            if last_error:
-                prompt = generate_retry_prompt(
-                    last_error,
-                    last_output,
-                    prompt_base
-                )
-            else:
-                prompt = prompt_base
+            prompt = (
+                generate_retry_prompt(last_error, last_output, prompt_base)
+                if last_error else prompt_base
+            )
 
             response = llm_client.get_llm().complete(prompt)
             last_output = response.text
 
             try:
-                # 🔹 parse
                 raw = json.loads(response.text)
 
-                # 🔹 valida schema
-                schema = RecurrenceSchema(**raw)
+                schema = ServiceTypeSchema(**raw)
 
-                # 🔹 valida regras
                 validate_schema(schema)
 
-                return schema.recorrencia
+                values = list(set([v.lower().strip() for v in schema.tipo_servico]))
+
+                if not values:
+                    raise ValueError("Lista vazia")
+
+                return values
 
             except Exception as e:
                 last_error = str(e)
                 print(f"[retry {attempt+1}] erro: {last_error}")
 
-        raise ValueError("Falha ao gerar valores de recorrência")
+        raise ValueError("Falha ao gerar tipo de serviço")
 
     # -----------------------
-    # 🔹 CLASSIFICAÇÃO
+    # 🔹 CLASSIFY
     # -----------------------
     def classify(self, text, values):
 
         text = str(text).lower()
 
-        # 🔹 1. regra simples (rápida)
+        # 🔹 heurística simples
         for v in values:
             if v in text:
                 return v
 
-        # 🔹 2. fallback LLM
-        prompt = build_recurrence_classification_prompt(text, values)
-        
+        # 🔹 fallback LLM
+        prompt = build_service_type_classification_prompt(text, values)
+
         response = llm_client.get_llm().complete(prompt)
 
         result = response.text.strip().lower()
@@ -87,13 +85,13 @@ class RecurrenceFeature(BaseFeature):
         if result in values:
             return result
 
-        return "desconhecido"
+        return "outros"
 
     # -----------------------
-    # 🔹 APPLY COM CACHE
+    # 🔹 APPLY
     # -----------------------
-    def apply(self, df: DataFrame, values) -> DataFrame:
-        df = df.copy()
+    def apply(self, df:DataFrame, values)->DataFrame:
+
         cache = {}
 
         def classify_cached(text):

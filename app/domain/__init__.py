@@ -1,2 +1,2 @@
-from .data_artifact import DataArtifact
-__all__ = ["DataArtifact"]
+from .data_artifact import DataArtifact, DataStatus
+__all__ = ["DataArtifact", "DataStatus"]

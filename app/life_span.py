@@ -5,6 +5,8 @@ def initApp():
     # inicializar o cliente para acessar as llms
     llm_client.initialize()
 
+    # ralizar teste com o llm
+
     # Criar pastas baseadas no que foi configurado
     # pastas para armazenar arquivos
     for path in [
