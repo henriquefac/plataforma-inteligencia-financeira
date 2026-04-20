@@ -70,15 +70,8 @@ class Settings(BaseSettings):
         BeforeValidator(parse_cors)
     ] = []
 
-    # Local para armazenar os arquivos
-    UPLOAD_DIR: Path = create_path("data/raw")
-    PROCESS_DIR: Path = create_path("data/clean")
-    ENRICH_DIR: Path = create_path("data/enrich")
-
-    # CORS
-    BACKEND_CORS_ORIGINS: Annotated[
-        list[AnyUrl] | str, BeforeValidator(parse_cors)
-    ] = []
+    # Diretório para índices vetoriais (RAG)
+    INDEX_DIR: Path = create_path("data/indices")
 
 
     # LLM

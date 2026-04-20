@@ -52,7 +52,7 @@ class EnrichService:
             data.save_enriched(self.df)
 
         except Exception as e:
-            data.status = "erro"
+            data.status = DataStatus.ERROR
             data._save_metadata()
             raise e
     
