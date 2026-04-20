@@ -9,6 +9,10 @@ class ReceitaTotalMetric(Metric):
     @property
     def name(self) -> str:
         return "receita_total"
+
+    @property
+    def group(self) -> str:
+        return "receita"
     
     @property
     def required_columns(self) -> list[str]:
@@ -24,6 +28,10 @@ class ReceitaRealMetric(Metric):
     @property
     def name(self) -> str:
         return "receita_real"
+
+    @property
+    def group(self) -> str:
+        return "receita"
     
     @property
     def required_columns(self) -> list[str]:
@@ -40,6 +48,10 @@ class ReceitaInadimplenteMetric(Metric):
     @property
     def name(self) -> str:
         return "receita_inadimplente"
+
+    @property
+    def group(self) -> str:
+        return "receita"
     
     @property
     def required_columns(self) -> list[str]:

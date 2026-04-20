@@ -83,5 +83,10 @@ class Settings(BaseSettings):
     # RAG
     VECTOR_STORE: Literal["faiss", "json"] = "json"
 
+    # Teste / Desenvolvimento
+    # Se True, apaga todos os dados gerados (raw, clean, enrich, etc.)
+    # ao encerrar a API. Útil para testes.
+    CLEAR_DATA_ON_SHUTDOWN: bool = False
+
 
 settingsInst = Settings()

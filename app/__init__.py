@@ -7,7 +7,7 @@ from fastapi import FastAPI
 # definir comportamento ao iniciar
 # e finalizar a aplicação
 from contextlib import asynccontextmanager
-from app.life_span import initApp
+from app.life_span import initApp, shutdownApp
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -15,7 +15,8 @@ async def lifespan(app: FastAPI):
     initApp()
     # =================================
     yield
-    # Definir comporttamento ao fializar
+    # Definir comportamento ao finalizar
+    shutdownApp()
     # ==================================
     
 # Instanciar a aplicação

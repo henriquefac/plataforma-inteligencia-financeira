@@ -10,12 +10,28 @@ class Metric(ABC):
     
     Pode ser usada como callable: metric(df) → float, o que permite
     passá-la diretamente para a função de evolução temporal.
+    
+    Atributos:
+        name: Identificador único da métrica.
+        group: Grupo de visualização (ex: "receita", "ticket", "taxa").
+               Métricas do mesmo grupo compartilham o mesmo gráfico/escala.
+        required_columns: Colunas necessárias no DataFrame para cálculo.
     """
     
     @property
     @abstractmethod
     def name(self) -> str:
         """Nome da métrica para exibição"""
+        pass
+
+    @property
+    @abstractmethod
+    def group(self) -> str:
+        """Grupo de visualização para agrupar métricas no dashboard.
+        
+        Métricas do mesmo grupo compartilham escala e gráfico.
+        Ex: "receita", "ticket", "taxa"
+        """
         pass
     
     @property

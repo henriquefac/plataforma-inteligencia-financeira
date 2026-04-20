@@ -12,6 +12,10 @@ class TaxaInadimplenciaMetric(Metric):
     @property
     def name(self) -> str:
         return "taxa_inadimplencia"
+
+    @property
+    def group(self) -> str:
+        return "taxa"
     
     @property
     def required_columns(self) -> list[str]:
@@ -19,8 +23,6 @@ class TaxaInadimplenciaMetric(Metric):
     
     def calculate(self, df: pd.DataFrame) -> float:
         total = len(df)
-        print("teste----------------")
-        print(df["is_inadimplente"])
         if total == 0:
             return 0.0
         qtd_inadimplentes = int(df["is_inadimplente"].sum())

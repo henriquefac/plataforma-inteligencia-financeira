@@ -9,6 +9,10 @@ class TicketMedioMetric(Metric):
     @property
     def name(self) -> str:
         return "ticket_medio"
+
+    @property
+    def group(self) -> str:
+        return "ticket"
     
     @property
     def required_columns(self) -> list[str]:

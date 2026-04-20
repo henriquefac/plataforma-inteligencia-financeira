@@ -127,9 +127,7 @@ class DataArtifact:
             raise ValueError("Dados enriquecidos não disponíveis")
 
         df = pd.read_csv(self.enriched_path)
-        print(df["is_inadimplente"])
         df = apply_enriched_schema(df)
-        print(df["is_inadimplente"])
         return df
 
     # -------------------------
