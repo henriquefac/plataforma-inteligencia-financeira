@@ -19,5 +19,6 @@
 
 from app.service.filter.filter import FilterService
 from app.service.filter.util import EXCLUDED_COLUMNS
+from app.service.filter.util import FilterParams
 
-__all__ = ["FilterService", "EXCLUDED_COLUMNS"]
+__all__ = ["FilterService", "EXCLUDED_COLUMNS", "FilterParams"]

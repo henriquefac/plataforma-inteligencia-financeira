@@ -14,6 +14,10 @@ from app.domain import MAP_COLL_NAMES
 from app.service.filter.util.serializers import serialize
 
 
+from pydantic import BaseModel, RootModel
+from typing import Any, Dict, Union, List
+
+
 @dataclass
 class RangeFilterMeta:
     """
@@ -65,3 +69,27 @@ class TagFilterMeta:
 
 
 FilterMeta = RangeFilterMeta | TagFilterMeta
+
+
+class RangeFilter(BaseModel):
+    min: float | str | None = None
+    max: float | str | None = None
+
+
+FilterValue = Union[
+    RangeFilter,     # range
+    List[Any],       # tag
+]
+
+class FilterParams(RootModel[Dict[str, FilterValue]]):
+
+    def to_service_dict(self) -> dict[str, Any]:
+        result = {}
+
+        for key, value in self.root.items():
+            if isinstance(value, RangeFilter):
+                result[key] = value.model_dump(exclude_none=True)
+            else:
+                result[key] = value
+
+        return result

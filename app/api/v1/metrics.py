@@ -2,25 +2,34 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional, Literal
 
+from pydantic import BaseModel, Field
+from typing import Literal, Union
+
 from app.service.metrics import MetricsService
+from app.service.filter import FilterService, FilterParams
 from app.domain import DataArtifact
 
 router = APIRouter()
-metrics_service = MetricsService()
+filter_service = FilterService()
+metrics_service = MetricsService(filter_service)
 
 
 # ─────────────────────────────────────────────
 # REQUEST MODELS
 # ─────────────────────────────────────────────
 
+# Fomato esperado de filtro:
+
 class MetricsRequest(BaseModel):
     """Corpo da requisição para cálculo de métricas consolidadas."""
     ingestion_id: str = Field(..., description="ID da ingestão")
 
+    filter_criteria: Optional[FilterParams] = Field(None, description="Critérios de filtro")
 
 class TemporalRequest(BaseModel):
     """Corpo da requisição para evolução temporal de métricas."""
     ingestion_id: str = Field(..., description="ID da ingestão")
+    filter_criteria: Optional[FilterParams] = Field(None, description="Critérios de filtro")
     metric_names: list[str] = Field(
         ...,
         description=(
@@ -55,7 +64,7 @@ async def get_metrics(request: MetricsRequest):
     """
     try:
         dados = DataArtifact.load(request.ingestion_id)
-        resultado = metrics_service.compute(data_artifact=dados)
+        resultado = metrics_service.compute(data_artifact=dados, filter_params=request.filter_criteria)
         return resultado
 
     except FileNotFoundError as e:
@@ -90,6 +99,7 @@ async def get_temporal(request: TemporalRequest):
             data_artifact=dados,
             metric_names=request.metric_names,
             freq=request.freq,
+            filter_params=request.filter_criteria,
             mode=request.mode,
         )
         return resultado

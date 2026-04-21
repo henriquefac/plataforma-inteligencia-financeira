@@ -71,6 +71,7 @@ class FilterService:
                 ]
         """
         df = data.load_enriched()
+        print(df["startup"])
         filters: list[FilterMeta] = []
 
         for col_name, col_type in ENRICHED_SCHEMA.items():

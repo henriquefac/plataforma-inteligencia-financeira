@@ -2,6 +2,7 @@ from app.service.filter.util.models import (
     RangeFilterMeta,
     TagFilterMeta,
     FilterMeta,
+    FilterParams
 )
 from app.service.filter.util.constants import (
     EXCLUDED_COLUMNS,

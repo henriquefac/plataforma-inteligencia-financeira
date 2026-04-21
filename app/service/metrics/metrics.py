@@ -6,6 +6,9 @@ from app.domain.data_artifact import DataArtifact, DataStatus
 from app.service.metrics.base import Metric
 from app.service.metrics.evolucao_temporal import criar_evolucao_temporal
 
+from app.service.filter import FilterService, FilterParams
+
+
 # Métricas concretas
 from app.service.metrics.receita.receita_metric import (
     ReceitaTotalMetric,
@@ -37,7 +40,8 @@ class MetricsService:
         3. Calcula evolução temporal para métricas selecionadas
     """
 
-    def __init__(self):
+    def __init__(self, filter_service: FilterService = None):
+        self.filter_service = filter_service
         self.metrics: list[Metric] = list(METRICS_REGISTRY)
 
     # -------------------------
@@ -46,6 +50,7 @@ class MetricsService:
     def compute(
         self,
         data_artifact: DataArtifact,
+        filter_params: FilterParams = None,
     ) -> dict:
         """
         Calcula todas as métricas registradas, agrupadas por
@@ -55,6 +60,13 @@ class MetricsService:
         de gráficos separados no dashboard.
         """
         df = data_artifact.load_enriched()
+
+        if self.filter_service and filter_params:
+            print("Usando filtros")
+            params = filter_params.to_service_dict()
+            print(params)
+            df = self.filter_service.apply(df, params)
+        
 
         # Agrupar resultados por grupo de visualização
         grupos: dict[str, dict] = defaultdict(dict)
@@ -80,6 +92,7 @@ class MetricsService:
         metric_names: list[str],
         freq: Literal["W", "M", "Q", "Y"] = "M",
         mode: Literal["pontual", "acumulativo"] = "pontual",
+        filter_params: FilterParams = None,
     ) -> dict:
         """
         Calcula a evolução temporal para uma lista de métricas,
@@ -91,12 +104,15 @@ class MetricsService:
                           Ex: ["receita_total", "receita_real"]
             freq: Frequência de agrupamento ("W", "M", "Q", "Y").
             mode: "pontual" ou "acumulativo".
-        
+            filter_params: Critérios de filtro.
         Returns:
             Dicionário com evolução temporal agrupada por grupo.
             Cada grupo contém as séries temporais das métricas solicitadas.
         """
         df = data_artifact.load_enriched()
+
+        if self.filter_service and filter_params:
+            df = self.filter_service.apply(df, filter_params.to_service_dict())
 
         # Resolver as métricas solicitadas
         metrics_to_compute = []

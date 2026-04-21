@@ -27,7 +27,7 @@ FEATURE_VALUES = {
 }   
 
 # Schema mapeando as colunas para seus nomes amigáveis
-ENRICHED_SCHEMA: dict[str, str] = {
+MAP_COLL_NAMES: dict[str, str] = {
     # ── Colunas originais (input do usuário) ──
     "cliente":    "Cliente",
     "valor":      "Valor",
