@@ -28,9 +28,11 @@ from app.api.v1.metrics import router as metrics_router
 from app.api.v1.insights import router as insights_router
 from app.api.v1.rag import router as rag_router
 from app.api.v1.artifacts import router as artifacts_router
+from app.api.v1.filters import router as filters_router
 
 app.include_router(upload_router, prefix="/files", tags=["files"])
 app.include_router(metrics_router, prefix="/metrics", tags=["metrics"])
+app.include_router(filters_router, prefix="/filters", tags=["filters"])
 app.include_router(insights_router, prefix="/insights", tags=["insights"])
 app.include_router(rag_router, prefix="/rag", tags=["rag"])
 app.include_router(artifacts_router, prefix="/artifacts", tags=["artifacts"])
