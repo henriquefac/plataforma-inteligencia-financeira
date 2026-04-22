@@ -3,18 +3,25 @@ from typing import Optional
 
 from app.core.llm import llm_client
 from app.service.metrics import MetricsService
+from app.service.filter import FilterParams
+from app.domain.data_artifact import DataArtifact
+from .deterministic_layer import DeterministicInsightsService
 from .prompts import build_insights_prompt, build_anomaly_prompt
 
 
 class InsightsService:
     """
-    Serviço de geração de insights automáticos via LLM.
-    Usa o MetricsService para calcular estatísticas e envia 
-    um resumo ao modelo para análise inteligente.
+    Serviço de geração de insights automáticos via IA.
+    Opera em duas camadas:
+    1. Determinística: Cálculos matemáticos e estatísticos avançados.
+    2. Não Determinística: Análise consultiva via LLM baseada nos fatos da camada 1.
     """
 
     def __init__(self):
-        self.metrics_service = MetricsService()
+        from app.service.filter import FilterService
+        self.filter_service = FilterService()
+        self.metrics_service = MetricsService(filter_service=self.filter_service)
+        self.deterministic_service = DeterministicInsightsService()
 
     def _parse_llm_json(self, text: str) -> dict:
         """Tenta extrair JSON da resposta do LLM."""
@@ -28,9 +35,9 @@ class InsightsService:
 
         # Tenta extrair JSON de bloco markdown ```json ... ```
         if "```json" in text:
-            start = text.index("```json") + 7
-            end = text.index("```", start)
             try:
+                start = text.index("```json") + 7
+                end = text.index("```", start)
                 return json.loads(text[start:end].strip())
             except (json.JSONDecodeError, ValueError):
                 pass
@@ -49,31 +56,29 @@ class InsightsService:
 
     def generate_insights(
         self,
-        ingestion_id: str,
-        status: Optional[str] = None,
-        cliente: Optional[str] = None,
-        data_inicio: Optional[str] = None,
-        data_fim: Optional[str] = None,
-        recorrencia: Optional[str] = None,
-        tipo_servico: Optional[str] = None,
+        data_artifact: DataArtifact,
+        filter_params: Optional[FilterParams] = None,
     ) -> dict:
         """
         Gera insights acionáveis via IA a partir dos dados enriquecidos.
-        Aceita os mesmos filtros do MetricsService para insights contextualizados.
+        Usa a camada determinística para fornecer contexto rico ao LLM.
         """
-        # 1. Calcular métricas (com filtros)
-        stats = self.metrics_service.compute(
-            ingestion_id=ingestion_id,
-            status=status,
-            cliente=cliente,
-            data_inicio=data_inicio,
-            data_fim=data_fim,
-            recorrencia=recorrencia,
-            tipo_servico=tipo_servico,
-        )
 
-        # 2. Montar prompt com resumo estatístico
-        prompt = build_insights_prompt(stats)
+        # 1. Calcular métricas básicas e avançadas (Camada Determinística)
+        stats = self.metrics_service.compute(data_artifact, filter_params)
+        
+        df = data_artifact.load_enriched()
+        df = self.metrics_service._apply_filters(df, filter_params)
+        deterministic_insights = self.deterministic_service.calculate(df)
+
+        # 2. Montar prompt com contexto completo
+        full_context = {
+            "metricas_basicas": stats["metricas"],
+            "metricas_avancadas": deterministic_insights,
+            "total_registros_analisados": len(df)
+        }
+        
+        prompt = build_insights_prompt(full_context)
 
         # 3. Enviar ao LLM
         llm = llm_client.get_llm()
@@ -81,40 +86,37 @@ class InsightsService:
 
         # 4. Parsear resposta
         insights = self._parse_llm_json(response.text)
+        model_name = response.additional_kwargs.get("model_name", "desconhecido")
 
         return {
-            "ingestion_id": ingestion_id,
-            "filtros_aplicados": stats.get("filtros_aplicados", {}),
-            "total_registros_analisados": stats.get("total_registros_filtrados", 0),
+            "ingestion_id": data_artifact.ingestion_id,
+            "deterministic_layer": deterministic_insights,
+            "model_used": model_name,
             **insights,
         }
 
     def detect_anomalies(
         self,
-        ingestion_id: str,
-        status: Optional[str] = None,
-        cliente: Optional[str] = None,
-        data_inicio: Optional[str] = None,
-        data_fim: Optional[str] = None,
-        recorrencia: Optional[str] = None,
-        tipo_servico: Optional[str] = None,
+        data_artifact: DataArtifact,
+        filter_params: Optional[FilterParams] = None,
     ) -> dict:
         """
         Detecta padrões e anomalias via IA.
         """
-        # 1. Calcular métricas (com filtros)
-        stats = self.metrics_service.compute(
-            ingestion_id=ingestion_id,
-            status=status,
-            cliente=cliente,
-            data_inicio=data_inicio,
-            data_fim=data_fim,
-            recorrencia=recorrencia,
-            tipo_servico=tipo_servico,
-        )
+        # 1. Calcular contexto (Camada Determinística)
+        stats = self.metrics_service.compute(data_artifact, filter_params)
+        df = data_artifact.load_enriched()
+        df = self.metrics_service._apply_filters(df, filter_params)
+        deterministic_insights = self.deterministic_service.calculate(df)
+
+        full_context = {
+            "metricas_basicas": stats["metricas"],
+            "metricas_avancadas": deterministic_insights,
+            "total_registros_analisados": len(df)
+        }
 
         # 2. Montar prompt de anomalias
-        prompt = build_anomaly_prompt(stats)
+        prompt = build_anomaly_prompt(full_context)
 
         # 3. Enviar ao LLM
         llm = llm_client.get_llm()
@@ -122,10 +124,11 @@ class InsightsService:
 
         # 4. Parsear resposta
         result = self._parse_llm_json(response.text)
+        model_name = response.additional_kwargs.get("model_name", "desconhecido")
 
         return {
-            "ingestion_id": ingestion_id,
-            "filtros_aplicados": stats.get("filtros_aplicados", {}),
-            "total_registros_analisados": stats.get("total_registros_filtrados", 0),
+            "ingestion_id": data_artifact.ingestion_id,
+            "deterministic_layer": deterministic_insights,
+            "model_used": model_name,
             **result,
         }
