@@ -75,10 +75,22 @@ class Settings(BaseSettings):
 
 
     # LLM
-    LLM_PROVIDER: Literal["ollama", "openai"] = "ollama"
+    LLM_PROVIDER: Literal["ollama", "openai", "openrouter"] = "openrouter"
     LLM_BASE_URL: str = "http://localhost:11434"
     LLM_MODEL: str = "mistral"
     EMBEDDING_MODEL: str = "nomic-embed-text"
+    LLM_TIMEOUT: float = 360.0  # Timeout em segundos para requisições ao LLM
+
+    # OpenRouter
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_MODEL: str = "meta-llama/llama-3.3-70b-instruct:free"
+    OPENROUTER_FALLBACK_MODELS: list[str] = [
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "google/gemma-3-12b-it:free",
+        "google/gemma-2-9b-it:free",
+        "nvidia/nemotron-3-super:free",
+        "openrouter/free"
+    ]
 
     # RAG
     VECTOR_STORE: Literal["faiss", "json"] = "json"
