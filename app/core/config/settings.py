@@ -86,9 +86,10 @@ class Settings(BaseSettings):
     OPENROUTER_MODEL: str = "meta-llama/llama-3.3-70b-instruct:free"
     OPENROUTER_FALLBACK_MODELS: list[str] = [
         "meta-llama/llama-3.3-70b-instruct:free",
+        "nvidia/nemotron-3-super-120b-a12b:free"
+        "google/gemma-3-27b-it:free"
         "google/gemma-3-12b-it:free",
         "google/gemma-2-9b-it:free",
-        "nvidia/nemotron-3-super:free",
         "openrouter/free"
     ]
 

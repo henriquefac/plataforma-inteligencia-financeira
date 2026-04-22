@@ -29,6 +29,7 @@ async def generate_insights(request: InsightsRequest):
     """
     Gera insights automáticos via IA sobre os dados financeiros.
     Aceita filtros para análise contextualizada.
+    Retorna apenas a lista de insights.
     """
     try:
         dados = DataArtifact.load(request.ingestion_id)
@@ -52,11 +53,34 @@ async def detect_anomalies(request: InsightsRequest):
     """
     Identifica padrões e anomalias nos dados via IA.
     Aceita filtros para análise contextualizada.
+    Retorna apenas anomalias e padrões.
     """
     try:
         dados = DataArtifact.load(request.ingestion_id)
         
         result = insights_service.detect_anomalies(
+            data_artifact=dados,
+            filter_params=request.filter_criteria
+        )
+        return result
+
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/metrics")
+async def get_insight_metrics(request: InsightsRequest):
+    """
+    Retorna as métricas da camada determinística usadas para auxiliar a geração dos insights.
+    """
+    try:
+        dados = DataArtifact.load(request.ingestion_id)
+        
+        result = insights_service.get_deterministic_metrics(
             data_artifact=dados,
             filter_params=request.filter_criteria
         )

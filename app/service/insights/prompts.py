@@ -11,21 +11,22 @@ def build_insights_prompt(context: dict) -> str:
     return f"""Você é um analista financeiro sênior especializado em inteligência de negócios.
 
 Analise os dados da CAMADA DETERMINÍSTICA abaixo e gere insights estratégicos e acionáveis.
-Os dados contêm métricas básicas (volume, totais) e avançadas (Pareto, conversão, contribuição, crescimento).
+Os dados contêm métricas básicas e avançadas (Pareto, conversão, volatilidade, consistência, contribuição e receita ajustada).
 
 DADOS DA CAMADA DETERMINÍSTICA:
 {context_json}
 
 TAREFAS:
-1. Analise a eficiência de receita e identifique onde estão as maiores perdas.
-2. Avalie a concentração de receita (Pareto) e o risco associado aos principais clientes.
-3. Observe tendências de crescimento ou queda na contribuição de clientes e segmentos.
-4. Identifique os 3-5 insights mais críticos para a saúde financeira do negócio.
+1. Analise a eficiência de receita (conversão) e identifique onde estão os maiores gaps de faturamento.
+2. Avalie a concentração de receita (Pareto) e o risco de dependência de grandes clientes.
+3. Observe a volatilidade e consistência do faturamento mensal para avaliar a previsibilidade do caixa.
+4. Analise a receita ajustada pelo risco de inadimplência para uma visão real do faturamento futuro.
+5. Identifique os 3-5 insights mais críticos e estratégicos para o negócio.
 
 PARA CADA INSIGHT, INDIQUE:
 - Título: Nome curto e impactante.
-- Observação: O fato matemático observado.
-- Impacto: Por que isso é relevante para o negócio (financeiro, operacional, risco).
+- Observacao: O fato matemático observado.
+- Impacto: Por que isso é relevante (financeiro, operacional, risco).
 - Ação: Recomendação concreta do que fazer.
 - Severidade: Alta, Média ou Baixa.
 
@@ -59,21 +60,22 @@ def build_anomaly_prompt(context: dict) -> str:
     return f"""Você é um especialista em detecção de anomalias e gestão de risco financeiro.
 
 Analise os fatos matemáticos abaixo para identificar padrões anômalos, riscos críticos e oportunidades ocultas.
+Foque em distorções de conversão, picos de volatilidade, quebras de consistência e riscos de concentração.
 
 DADOS DA CAMADA DETERMINÍSTICA:
 {context_json}
 
 TAREFAS:
-1. Detecte anomalias de valor e comportamento (ex: clientes com queda súbita de contribuição).
-2. Identifique riscos de concentração excessiva ou dependência de poucos clientes/segmentos.
-3. Analise o risco de inadimplência ponderado por valor em diferentes segmentos.
-4. Identifique distorções na taxa de conversão de receita.
+1. Detecte anomalias de valor e comportamento (ex: clientes com queda súbita de contribuição ou ticket médio anômalo).
+2. Identifique riscos de concentração excessiva (Pareto) que podem fragilizar a operação.
+3. Analise o impacto da inadimplência e a disparidade entre receita real e ajustada.
+4. Identifique padrões de comportamento por segmento ou recorrência que divergem da média.
 
 FORMATO DE RESPOSTA (JSON):
 {{
     "anomalias": [
         {{
-            "tipo": "outlier|concentracao|inadimplencia|conversao|queda_contribuicao",
+            "tipo": "outlier|concentracao|inadimplencia|conversao|queda_contribuicao|volatilidade",
             "descricao": "string",
             "evidencia": "números que comprovam",
             "risco": "alto|medio|baixo",
@@ -82,7 +84,7 @@ FORMATO DE RESPOSTA (JSON):
     ],
     "padroes": [
         {{
-            "tipo": "comportamento|segmentacao|correlacao",
+            "tipo": "comportamento|segmentacao|correlacao|recorrencia",
             "descricao": "string",
             "evidencia": "string"
         }}

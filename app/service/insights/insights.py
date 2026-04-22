@@ -86,14 +86,9 @@ class InsightsService:
 
         # 4. Parsear resposta
         insights = self._parse_llm_json(response.text)
-        model_name = response.additional_kwargs.get("model_name", "desconhecido")
-
-        return {
-            "ingestion_id": data_artifact.ingestion_id,
-            "deterministic_layer": deterministic_insights,
-            "model_used": model_name,
-            **insights,
-        }
+        
+        # Retorna apenas o conteúdo de insights
+        return insights
 
     def detect_anomalies(
         self,
@@ -124,11 +119,25 @@ class InsightsService:
 
         # 4. Parsear resposta
         result = self._parse_llm_json(response.text)
-        model_name = response.additional_kwargs.get("model_name", "desconhecido")
+        
+        # Retorna apenas anomalias e padrões
+        return result
+
+    def get_deterministic_metrics(
+        self,
+        data_artifact: DataArtifact,
+        filter_params: Optional[FilterParams] = None,
+    ) -> dict:
+        """
+        Retorna as métricas da camada determinística usadas para os insights.
+        """
+        stats = self.metrics_service.compute(data_artifact, filter_params)
+        df = data_artifact.load_enriched()
+        df = self.metrics_service._apply_filters(df, filter_params)
+        deterministic_insights = self.deterministic_service.calculate(df)
 
         return {
-            "ingestion_id": data_artifact.ingestion_id,
-            "deterministic_layer": deterministic_insights,
-            "model_used": model_name,
-            **result,
+            "metricas_basicas": stats["metricas"],
+            "metricas_avancadas": deterministic_insights,
+            "total_registros_analisados": len(df)
         }

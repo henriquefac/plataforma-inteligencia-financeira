@@ -1,5 +1,7 @@
 from typing import Any, List, Optional
 import logging
+import time
+import requests
 
 from app.core.config import settingsInst as Settings
 
@@ -104,6 +106,8 @@ class FallbackLLM(CustomLLM):
     """LLM que tenta um provedor primário e usa um fallback em caso de erro."""
     primary: Any
     fallback: Any
+    fallback_count: int = 0
+    max_fallbacks: int = 5
 
     def __init__(self, primary: Any, fallback: Any, **kwargs):
         super().__init__(primary=primary, fallback=fallback, **kwargs)
@@ -113,6 +117,13 @@ class FallbackLLM(CustomLLM):
         return self.primary.metadata
 
     def _complete(self, prompt: str, **kwargs: Any) -> CompletionResponse:
+        if self.fallback_count >= self.max_fallbacks:
+            print(f"🔄 [LLM] Limite de falhas atingido ({self.fallback_count}/{self.max_fallbacks}). Usando fallback diretamente.")
+            res = self.fallback.complete(prompt, **kwargs)
+            if "model_name" not in res.additional_kwargs:
+                res.additional_kwargs["model_name"] = f"ollama/{self.fallback.model}"
+            return res
+
         try:
             res = self.primary.complete(prompt, **kwargs)
             # Garantir que o model_name esteja presente
@@ -120,7 +131,8 @@ class FallbackLLM(CustomLLM):
                 res.additional_kwargs["model_name"] = self.primary.metadata.model_name
             return res
         except Exception as e:
-            print(f"⚠️ [LLM] Falha total no provedor primário, usando fallback (Ollama/Local)...")
+            self.fallback_count += 1
+            print(f"⚠️ [LLM] Falha total no provedor primário ({self.fallback_count}/{self.max_fallbacks}), usando fallback (Ollama/Local)...")
             res = self.fallback.complete(prompt, **kwargs)
             # Adicionar model_name do fallback
             if "model_name" not in res.additional_kwargs:
@@ -128,30 +140,46 @@ class FallbackLLM(CustomLLM):
             return res
 
     def _chat(self, messages: List[ChatMessage], **kwargs: Any) -> ChatResponse:
+        if self.fallback_count >= self.max_fallbacks:
+            print(f"🔄 [LLM] Limite de falhas atingido ({self.fallback_count}/{self.max_fallbacks}). Usando fallback diretamente.")
+            res = self.fallback.chat(messages, **kwargs)
+            if "model_name" not in res.additional_kwargs:
+                res.additional_kwargs["model_name"] = f"ollama/{self.fallback.model}"
+            return res
+
         try:
             res = self.primary.chat(messages, **kwargs)
             if "model_name" not in res.additional_kwargs:
                 res.additional_kwargs["model_name"] = self.primary.metadata.model_name
             return res
         except Exception as e:
-            print(f"⚠️ [LLM] Falha total no provedor primário, usando fallback (Ollama/Local)...")
+            self.fallback_count += 1
+            print(f"⚠️ [LLM] Falha total no provedor primário ({self.fallback_count}/{self.max_fallbacks}), usando fallback (Ollama/Local)...")
             res = self.fallback.chat(messages, **kwargs)
             if "model_name" not in res.additional_kwargs:
                 res.additional_kwargs["model_name"] = f"ollama/{self.fallback.model}"
             return res
 
     def _stream_complete(self, prompt: str, **kwargs: Any):
+        if self.fallback_count >= self.max_fallbacks:
+            return self.fallback.stream_complete(prompt, **kwargs)
+
         try:
             return self.primary.stream_complete(prompt, **kwargs)
         except Exception as e:
-            logger.warning(f"Erro no streaming do LLM primário, usando fallback: {e}")
+            self.fallback_count += 1
+            logger.warning(f"Erro no streaming do LLM primário ({self.fallback_count}/{self.max_fallbacks}), usando fallback: {e}")
             return self.fallback.stream_complete(prompt, **kwargs)
 
     def _stream_chat(self, messages: List[ChatMessage], **kwargs: Any):
+        if self.fallback_count >= self.max_fallbacks:
+            return self.fallback.stream_chat(messages, **kwargs)
+
         try:
             return self.primary.stream_chat(messages, **kwargs)
         except Exception as e:
-            logger.warning(f"Erro no streaming do LLM primário, usando fallback: {e}")
+            self.fallback_count += 1
+            logger.warning(f"Erro no streaming do LLM primário ({self.fallback_count}/{self.max_fallbacks}), usando fallback: {e}")
             return self.fallback.stream_chat(messages, **kwargs)
 
     def complete(self, prompt: str, **kwargs: Any) -> CompletionResponse:
@@ -221,9 +249,64 @@ class LLMClient:
             self._embedding = self._init_embedding()
         return self._embedding
 
+    def _wait_for_ollama(self, timeout: int = 120):
+        """Aguardar até que o serviço Ollama esteja pronto e o modelo carregado."""
+        url = f"{Settings.LLM_BASE_URL}/api/tags"
+        start_time = time.time()
+        
+        print(f"⏳ [Ollama] Aguardando prontidão em {Settings.LLM_BASE_URL} (timeout {timeout}s)...")
+        
+        while time.time() - start_time < timeout:
+            try:
+                response = requests.get(url, timeout=5)
+                if response.status_code == 200:
+                    models_data = response.json().get('models', [])
+                    models = [m['name'] for m in models_data]
+                    
+                    # Verificação flexível do nome do modelo (com ou sem tag)
+                    target = Settings.LLM_MODEL.lower()
+                    available = [m.lower() for m in models]
+                    
+                    model_found = any(target in m or m in target for m in available)
+                    
+                    if model_found:
+                        print(f"✅ [Ollama] Serviço pronto e modelo '{Settings.LLM_MODEL}' disponível.")
+                        
+                        # Warm-up: Forçar carregamento na RAM
+                        print(f"🔥 [Ollama] Realizando warm-up do modelo '{Settings.LLM_MODEL}'...")
+                        try:
+                            requests.post(
+                                f"{Settings.LLM_BASE_URL}/api/generate",
+                                json={"model": Settings.LLM_MODEL, "prompt": "hi", "stream": False},
+                                timeout=Settings.LLM_TIMEOUT
+                            )
+                            print(f"✨ [Ollama] Warm-up concluído com sucesso.")
+                        except Exception as e:
+                            print(f"⚠️ [Ollama] Warm-up falhou (mas o serviço está up): {e}")
+                            
+                        return True
+                    else:
+                        # Se não achou o modelo principal, tenta ver se o embedding está lá pelo menos
+                        embed_target = Settings.EMBEDDING_MODEL.lower()
+                        if any(embed_target in m or m in embed_target for m in available):
+                            print(f"⚠️ [Ollama] Modelo '{Settings.LLM_MODEL}' ainda não disponível, mas embedding '{Settings.EMBEDDING_MODEL}' pronto.")
+                
+            except Exception:
+                # Silencioso enquanto tenta conectar
+                pass
+            
+            time.sleep(5)
+        
+        print(f"❌ [Ollama] Timeout ao aguardar o serviço. A aplicação pode apresentar lentidão ou erros no fallback.")
+        return False
+
     # Configura o llama index globalmente
     def initialize(self):
         if not self._initialized:
+            # Aguardar Ollama se ele for necessário (como primário ou fallback)
+            # Aumentamos o timeout para 120s para dar tempo do container subir e o pull terminar
+            self._wait_for_ollama(timeout=120)
+            
             LlamaSettings.llm = self.get_llm()
             LlamaSettings.embed_model = self.get_embedding()
             self._initialized = True
