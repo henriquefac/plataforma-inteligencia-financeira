@@ -1,0 +1,1 @@
+# aqui vou tentar fazer algo ainda mais simples. Vou eleger meus próprios critérios

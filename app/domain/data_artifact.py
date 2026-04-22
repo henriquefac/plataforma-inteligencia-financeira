@@ -7,6 +7,7 @@ import uuid
 import pandas as pd
 
 from app.core.config import settingsInst
+from app.domain.schema import apply_enriched_schema
 
 
 class DataStatus(str, Enum):
@@ -98,14 +99,14 @@ class DataArtifact:
 
     def save_processed(self, df: pd.DataFrame):
         path = self._build_processed_path()
-        df.to_csv(path)
+        df.to_csv(path, index=False)
         self.processed_path = path
         self.status = DataStatus.PROCESSED
         self._save_metadata()
 
     def save_enriched(self, df: pd.DataFrame):
         path = self._build_enriched_path()
-        df.to_csv(path)
+        df.to_csv(path, index=False)
         self.enriched_path = path
         self.status = DataStatus.ENRICHED
         self._save_metadata()
@@ -124,7 +125,10 @@ class DataArtifact:
     def load_enriched(self) -> pd.DataFrame:
         if not self.enriched_path:
             raise ValueError("Dados enriquecidos não disponíveis")
-        return pd.read_csv(self.enriched_path)
+
+        df = pd.read_csv(self.enriched_path)
+        df = apply_enriched_schema(df)
+        return df
 
     # -------------------------
     # HELPERS

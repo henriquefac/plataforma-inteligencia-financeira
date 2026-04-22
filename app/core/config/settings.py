@@ -70,25 +70,35 @@ class Settings(BaseSettings):
         BeforeValidator(parse_cors)
     ] = []
 
-    # Local para armazenar os arquivos
-    UPLOAD_DIR: Path = create_path("data/raw")
-    PROCESS_DIR: Path = create_path("data/clean")
-    ENRICH_DIR: Path = create_path("data/enrich")
-
-    # CORS
-    BACKEND_CORS_ORIGINS: Annotated[
-        list[AnyUrl] | str, BeforeValidator(parse_cors)
-    ] = []
+    # Diretório para índices vetoriais (RAG)
+    INDEX_DIR: Path = create_path("data/indices")
 
 
     # LLM
-    LLM_PROVIDER: Literal["ollama", "openai"] = "ollama"
+    LLM_PROVIDER: Literal["ollama", "openai", "openrouter"] = "openrouter"
     LLM_BASE_URL: str = "http://localhost:11434"
     LLM_MODEL: str = "mistral"
     EMBEDDING_MODEL: str = "nomic-embed-text"
+    LLM_TIMEOUT: float = 360.0  # Timeout em segundos para requisições ao LLM
+
+    # OpenRouter
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_MODEL: str = "meta-llama/llama-3.3-70b-instruct:free"
+    OPENROUTER_FALLBACK_MODELS: list[str] = [
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "google/gemma-3-12b-it:free",
+        "google/gemma-2-9b-it:free",
+        "nvidia/nemotron-3-super:free",
+        "openrouter/free"
+    ]
 
     # RAG
     VECTOR_STORE: Literal["faiss", "json"] = "json"
+
+    # Teste / Desenvolvimento
+    # Se True, apaga todos os dados gerados (raw, clean, enrich, etc.)
+    # ao encerrar a API. Útil para testes.
+    CLEAR_DATA_ON_SHUTDOWN: bool = False
 
 
 settingsInst = Settings()
