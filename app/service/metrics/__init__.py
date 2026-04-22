@@ -8,7 +8,11 @@ from .receita.receita_metric import (
     ReceitaInadimplenteMetric,
 )
 from .ticket_medio.ticket_medio_metric import TicketMedioMetric
-from .inadimplencia.inadimplencia_metric import TaxaInadimplenciaMetric
+from .taxa.taxa_metric import (
+    TaxaInadimplenciaMetric,
+    TaxaPagoMetric,
+    TaxaPendenteMetric,
+)
 
 __all__ = [
     "Metric",
@@ -19,4 +23,6 @@ __all__ = [
     "ReceitaInadimplenteMetric",
     "TicketMedioMetric",
     "TaxaInadimplenciaMetric",
+    "TaxaPagoMetric",
+    "TaxaPendenteMetric",
 ]

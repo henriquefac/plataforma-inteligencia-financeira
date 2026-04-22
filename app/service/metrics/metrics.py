@@ -15,8 +15,17 @@ from app.service.metrics.receita.receita_metric import (
     ReceitaRealMetric,
     ReceitaInadimplenteMetric,
 )
-from app.service.metrics.ticket_medio.ticket_medio_metric import TicketMedioMetric
-from app.service.metrics.inadimplencia.inadimplencia_metric import TaxaInadimplenciaMetric
+from app.service.metrics.ticket_medio.ticket_medio_metric import (
+    TicketMedioMetric, 
+    TicketMedioPendente,
+    TicketMedioPago,
+    TicketMedioInadimplente
+    )
+from app.service.metrics.taxa.taxa_metric import (
+    TaxaInadimplenciaMetric,
+    TaxaPagoMetric,
+    TaxaPendenteMetric,
+)
 
 
 # Registro das métricas disponíveis
@@ -25,7 +34,12 @@ METRICS_REGISTRY: list[Metric] = [
     ReceitaRealMetric(),
     ReceitaInadimplenteMetric(),
     TicketMedioMetric(),
+    TicketMedioPendente(),
+    TicketMedioPago(),
+    TicketMedioInadimplente(),
     TaxaInadimplenciaMetric(),
+    TaxaPagoMetric(),
+    TaxaPendenteMetric(),
 ]
 
 
@@ -60,12 +74,8 @@ class MetricsService:
         de gráficos separados no dashboard.
         """
         df = data_artifact.load_enriched()
+        df = self._apply_filters(df, filter_params)
 
-        if self.filter_service and filter_params:
-            print("Usando filtros")
-            params = filter_params.to_service_dict()
-            print(params)
-            df = self.filter_service.apply(df, params)
         
 
         # Agrupar resultados por grupo de visualização
@@ -110,9 +120,8 @@ class MetricsService:
             Cada grupo contém as séries temporais das métricas solicitadas.
         """
         df = data_artifact.load_enriched()
+        df = self._apply_filters(df, filter_params)
 
-        if self.filter_service and filter_params:
-            df = self.filter_service.apply(df, filter_params.to_service_dict())
 
         # Resolver as métricas solicitadas
         metrics_to_compute = []
@@ -180,4 +189,23 @@ class MetricsService:
         for m in self.metrics:
             grupos[m.group].append(m.name)
         return dict(grupos)
+
+    def _apply_filters(
+        self, 
+        df: pd.DataFrame, 
+        filter_params: Optional[FilterParams]
+    ) -> pd.DataFrame:
+        """Aplica filtros ao DataFrame, se fornecidos."""
+        if self.filter_service and filter_params:
+            params = filter_params.to_service_dict()
+            df = self.filter_service.apply(df, params)
+            
+            if df.empty:
+                import logging
+                logging.getLogger(__name__).info(
+                    "Filtros aplicados resultaram em DataFrame vazio. Parâmetros: %s", 
+                    params
+                )
+        return df
+
 
