@@ -26,6 +26,7 @@ class DataArtifact:
     raw_path: Path
     processed_path: Optional[Path] = None
     enriched_path: Optional[Path] = None
+    embeddings_path: Optional[Path] = None
 
     status: DataStatus = DataStatus.UPLOADED
 
@@ -61,6 +62,7 @@ class DataArtifact:
             "raw_path": str(self.raw_path),
             "processed_path": str(self.processed_path) if self.processed_path else None,
             "enriched_path": str(self.enriched_path) if self.enriched_path else None,
+            "embeddings_path": str(self.embeddings_path) if self.embeddings_path else None,
             "status": self.status,
         }
 
@@ -85,6 +87,7 @@ class DataArtifact:
             raw_path=Path(data["raw_path"]),
             processed_path=Path(data["processed_path"]) if data["processed_path"] else None,
             enriched_path=Path(data["enriched_path"]) if data["enriched_path"] else None,
+            embeddings_path=Path(data["embeddings_path"]) if data.get("embeddings_path") else None,
             status=DataStatus(data["status"]),
         )
 
@@ -111,6 +114,13 @@ class DataArtifact:
         self.status = DataStatus.ENRICHED
         self._save_metadata()
 
+    def save_embeddings(self, embeddings_data: list):
+        path = self._build_embeddings_path()
+        with open(path, "w") as f:
+            json.dump(embeddings_data, f)
+        self.embeddings_path = path
+        self._save_metadata()
+
     # -------------------------
     # IO - READ
     # -------------------------
@@ -130,6 +140,13 @@ class DataArtifact:
         df = apply_enriched_schema(df)
         return df
 
+    def load_embeddings(self) -> dict:
+        if not self.embeddings_path:
+            raise ValueError("Embeddings não disponíveis")
+        with open(self.embeddings_path, "r") as f:
+            embeddings_data = json.load(f)
+        return embeddings_data
+
     # -------------------------
     # HELPERS
     # -------------------------
@@ -146,3 +163,6 @@ class DataArtifact:
 
     def _build_enriched_path(self) -> Path:
         return settingsInst.ENRICH_DIR / self.filename.replace(".xlsx", ".csv")
+
+    def _build_embeddings_path(self) -> Path:
+        return settingsInst.INDEX_DIR / f"{self.ingestion_id}.json"

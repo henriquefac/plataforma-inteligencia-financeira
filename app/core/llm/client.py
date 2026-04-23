@@ -375,6 +375,7 @@ class LLMClient:
         return OllamaEmbedding(
             model_name=Settings.EMBEDDING_MODEL,
             base_url=Settings.LLM_BASE_URL,
+            embed_batch_size=42, # Otimização: maior lote para processamento
         )
 
     def get_llm(self, task: str = "general"):

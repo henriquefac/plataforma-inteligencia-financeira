@@ -99,13 +99,16 @@ class Settings(BaseSettings):
         "openrouter/free"
     ]
 
-    # RAG
-    VECTOR_STORE: Literal["faiss", "json"] = "json"
 
     # Teste / Desenvolvimento
     # Se True, apaga todos os dados gerados (raw, clean, enrich, etc.)
     # ao encerrar a API. Útil para testes.
     CLEAR_DATA_ON_SHUTDOWN: bool = False
+
+    # ChromaDB
+    CHROMA_HOST: str = "localhost"
+    CHROMA_PORT: int = 8000
+    CHROMA_COLLECTION_NAME: str = "vicio_collection_v1"
 
 
 settingsInst = Settings()

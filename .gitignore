@@ -8,6 +8,7 @@ wheels/
 
 # dados
 data/
+chroma_data/
 
 # Virtual environments
 .venv
