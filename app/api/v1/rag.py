@@ -16,10 +16,33 @@ class QueryRequest(BaseModel):
 @router.post("/query")
 async def rag_query(request: QueryRequest):
     """
-    Consulta em linguagem natural sobre os dados financeiros.
-    Usa RAG para buscar transações relevantes e gerar resposta contextualizada.
+    Consulta geral em linguagem natural. 
+    Atualmente utiliza a interpretação direta em Pandas para maior precisão.
     """
     try:
+        result = await rag_query_engine.query(
+            ingestion_id=request.ingestion_id,
+            question=request.question,
+        )
+        return result
+
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/analytics/interpret")
+async def analytics_interpret(request: QueryRequest):
+    """
+    Endpoint especializado para interpretação analítica.
+    Converte a pergunta em código Pandas e executa sobre o dataset.
+    Retorna o código gerado e o resultado formatado.
+    """
+    try:
+        # A lógica atual do query_engine já é 100% interpretação
         result = await rag_query_engine.query(
             ingestion_id=request.ingestion_id,
             question=request.question,
