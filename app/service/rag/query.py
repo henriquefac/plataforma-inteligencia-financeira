@@ -1,4 +1,5 @@
 from app.core.llm import llm_client
+from app.core.cache import backend_cache
 from .indexer import RAGIndexer
 
 
@@ -23,7 +24,8 @@ class RAGQueryEngine:
     def __init__(self):
         self.indexer = RAGIndexer()
 
-    def query(self, ingestion_id: str, question: str) -> dict:
+    @backend_cache(ttl=3600)
+    async def query(self, ingestion_id: str, question: str) -> dict:
         """
         Executa uma consulta em linguagem natural sobre os dados 
         de uma ingestão específica.
@@ -38,13 +40,13 @@ class RAGQueryEngine:
 
         # 2. Criar query engine
         query_engine = index.as_query_engine(
-            llm=llm_client.get_llm(),
+            llm=llm_client.get_llm(task="rag"),
             similarity_top_k=10,
             system_prompt=SYSTEM_PROMPT,
         )
 
         # 3. Executar consulta
-        response = query_engine.query(question)
+        response = await query_engine.aquery(question)
 
         # 4. Extrair fontes
         sources = []

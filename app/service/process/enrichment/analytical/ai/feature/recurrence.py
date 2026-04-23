@@ -44,7 +44,7 @@ class RecurrenceFeature(BaseFeature):
             else:
                 prompt = prompt_base
 
-            response = llm_client.get_llm().complete(prompt)
+            response = llm_client.get_llm(task="enrichment").complete(prompt)
             last_output = response.text
 
             try:
@@ -80,7 +80,7 @@ class RecurrenceFeature(BaseFeature):
         # 🔹 2. fallback LLM
         prompt = build_recurrence_classification_prompt(text, values)
         
-        response = llm_client.get_llm().complete(prompt)
+        response = llm_client.get_llm(task="enrichment").complete(prompt)
 
         result = response.text.strip().lower()
 

@@ -13,7 +13,7 @@ class RecurrenceFeature(BaseFeature):
     def classify(self, text: str, values: list[str]) -> str:
         prompt = build_recurrence_classification_prompt(text, values)
 
-        response = llm_client.get_llm().complete(
+        response = llm_client.get_llm(task="enrichment").complete(
             prompt
         ).text
 

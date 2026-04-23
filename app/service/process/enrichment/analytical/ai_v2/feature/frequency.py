@@ -11,7 +11,7 @@ class FrequencyFeature(BaseFeature):
     def classify(self, text: str, values: list[str]) -> str:
         prompt = build_frequency_classification_prompt(text, values)
 
-        response = llm_client.get_llm().complete(
+        response = llm_client.get_llm(task="enrichment").complete(
             prompt=prompt
         )
 
@@ -35,7 +35,7 @@ class FrequencyFeature(BaseFeature):
             raise ValueError("FrequencyFeature requer coluna 'recorrencia'")
 
         # só recorrentes
-        mask = df["recorrencia"] == "Recorrente"
+        mask = df["recorrencia"] == "recorrente"
 
         unique_descriptions = df.loc[mask, "descricao"].dropna().unique()
 

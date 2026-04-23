@@ -76,6 +76,12 @@ class Settings(BaseSettings):
 
     # LLM
     LLM_PROVIDER: Literal["ollama", "openai", "openrouter"] = "openrouter"
+    
+    # Provedores específicos por tarefa
+    ENRICHMENT_LLM_PROVIDER: Literal["ollama", "openai", "openrouter"] = "ollama"
+    INSIGHTS_LLM_PROVIDER: Literal["ollama", "openai", "openrouter"] = "openrouter"
+    RAG_LLM_PROVIDER: Literal["ollama", "openai", "openrouter"] = "openrouter"
+
     LLM_BASE_URL: str = "http://localhost:11434"
     LLM_MODEL: str = "mistral"
     EMBEDDING_MODEL: str = "nomic-embed-text"

@@ -20,7 +20,7 @@ async def rag_query(request: QueryRequest):
     Usa RAG para buscar transações relevantes e gerar resposta contextualizada.
     """
     try:
-        result = rag_query_engine.query(
+        result = await rag_query_engine.query(
             ingestion_id=request.ingestion_id,
             question=request.question,
         )
@@ -35,7 +35,7 @@ async def rag_query(request: QueryRequest):
 
 
 @router.post("/{ingestion_id}/index")
-async def build_index(ingestion_id: str):
+def build_index(ingestion_id: str):
     """
     Força a (re)construção do índice vetorial para uma ingestão.
     """
