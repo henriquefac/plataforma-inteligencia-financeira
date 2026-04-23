@@ -1,11 +1,10 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from app.service.rag import RAGIndexer, RAGQueryEngine
+from app.service.rag import RAGQueryEngine
 from app.service.rag.embedding import EmbeddingService
 
 router = APIRouter()
-rag_indexer = RAGIndexer()
 rag_query_engine = RAGQueryEngine()
 embedding_service = EmbeddingService()
 

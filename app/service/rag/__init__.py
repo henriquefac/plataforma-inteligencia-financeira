@@ -1,3 +1,2 @@
-from .indexer import RAGIndexer
 from .query import RAGQueryEngine
-__all__ = ["RAGIndexer", "RAGQueryEngine"]
+__all__ = ["RAGQueryEngine"]

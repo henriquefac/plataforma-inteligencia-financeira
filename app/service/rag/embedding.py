@@ -44,7 +44,12 @@ class EmbeddingService:
                         "id": str(row.get("id", "N/A")),
                         "cliente": str(row.get("cliente", "N/A")),
                         "status": str(row.get("status", "N/A")),
-                        "setor": str(row.get("setor", "Geral"))
+                        "setor": str(row.get("setor", "Geral")),
+                        "valor": float(row.get("receita_real", 0)),
+                        "data": str(row.get("data", "")),
+                        "recorrencia": str(row.get("recorrencia", "N/A")),
+                        "tipo_servico": str(row.get("tipo_servico", "N/A")),
+                        "is_inadimplente": bool(row.get("is_inadimplente", False))
                     }
                 )
                 for row in records
