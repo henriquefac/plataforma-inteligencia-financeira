@@ -40,7 +40,7 @@ class ServiceTypeFeature(BaseFeature):
                 if last_error else prompt_base
             )
 
-            response = llm_client.get_llm().complete(prompt)
+            response = llm_client.get_llm(task="enrichment").complete(prompt)
             last_output = response.text
 
             try:
@@ -78,7 +78,7 @@ class ServiceTypeFeature(BaseFeature):
         # 🔹 fallback LLM
         prompt = build_service_type_classification_prompt(text, values)
 
-        response = llm_client.get_llm().complete(prompt)
+        response = llm_client.get_llm(task="enrichment").complete(prompt)
 
         result = response.text.strip().lower()
 

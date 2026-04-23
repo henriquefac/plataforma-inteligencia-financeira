@@ -52,7 +52,7 @@ class TemporalRequest(BaseModel):
 # ─────────────────────────────────────────────
 
 @router.post("/")
-async def get_metrics(request: MetricsRequest):
+def get_metrics(request: MetricsRequest):
     """
     Calcula todas as métricas consolidadas de uma ingestão,
     agrupadas por tipo de visualização (receita, ticket, taxa).
@@ -76,7 +76,7 @@ async def get_metrics(request: MetricsRequest):
 
 
 @router.post("/temporal")
-async def get_temporal(request: TemporalRequest):
+def get_temporal(request: TemporalRequest):
     """
     Calcula a evolução temporal para as métricas selecionadas,
     agrupadas por grupo de visualização.
@@ -113,7 +113,7 @@ async def get_temporal(request: TemporalRequest):
 
 
 @router.get("/available")
-async def list_available_metrics():
+def list_available_metrics():
     """
     Lista todas as métricas disponíveis e seus grupos de visualização.
 

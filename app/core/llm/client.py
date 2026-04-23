@@ -2,6 +2,8 @@ from typing import Any, List, Optional
 import logging
 import time
 import requests
+import httpx
+import asyncio
 
 from app.core.config import settingsInst as Settings
 
@@ -43,18 +45,57 @@ class OpenRouterLLM(CustomLLM):
         for model in self.models:
             try:
                 print(f"🚀 [OpenRouter] Tentando modelo: {model}...")
-                with OpenRouter(api_key=self.api_key) as client:
-                    response = client.chat.send(
-                        model=model,
-                        messages=[{"role": "user", "content": prompt}]
+                with httpx.Client(timeout=Settings.LLM_TIMEOUT) as client:
+                    response = client.post(
+                        "https://openrouter.ai/api/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {self.api_key}",
+                            "Content-Type": "application/json"
+                        },
+                        json={
+                            "model": model,
+                            "messages": [{"role": "user", "content": prompt}]
+                        }
                     )
+                    response.raise_for_status()
+                    data = response.json()
                     print(f"✅ [OpenRouter] Sucesso com modelo: {model}")
                     return CompletionResponse(
-                        text=response.choices[0].message.content,
+                        text=data["choices"][0]["message"]["content"],
                         additional_kwargs={"model_name": model}
                     )
             except Exception as e:
                 print(f"❌ [OpenRouter] Falha no modelo {model}: {e}")
+                last_error = e
+        
+        raise last_error or RuntimeError("Todos os modelos do OpenRouter falharam.")
+
+    async def _acomplete(self, prompt: str, **kwargs: Any) -> CompletionResponse:
+        last_error = None
+        for model in self.models:
+            try:
+                print(f"🚀 [OpenRouter] Tentando modelo (async): {model}...")
+                async with httpx.AsyncClient(timeout=Settings.LLM_TIMEOUT) as client:
+                    response = await client.post(
+                        "https://openrouter.ai/api/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {self.api_key}",
+                            "Content-Type": "application/json"
+                        },
+                        json={
+                            "model": model,
+                            "messages": [{"role": "user", "content": prompt}]
+                        }
+                    )
+                    response.raise_for_status()
+                    data = response.json()
+                    print(f"✅ [OpenRouter] Sucesso com modelo (async): {model}")
+                    return CompletionResponse(
+                        text=data["choices"][0]["message"]["content"],
+                        additional_kwargs={"model_name": model}
+                    )
+            except Exception as e:
+                print(f"❌ [OpenRouter] Falha no modelo {model} (async): {e}")
                 last_error = e
         
         raise last_error or RuntimeError("Todos os modelos do OpenRouter falharam.")
@@ -64,22 +105,65 @@ class OpenRouterLLM(CustomLLM):
         last_error = None
         for model in self.models:
             try:
-                print(f"🚀 [OpenRouter] Tentando modelo: {model}...")
-                with OpenRouter(api_key=self.api_key) as client:
-                    response = client.chat.send(
-                        model=model,
-                        messages=msgs
+                print(f"🚀 [OpenRouter] Tentando modelo (chat): {model}...")
+                with httpx.Client(timeout=Settings.LLM_TIMEOUT) as client:
+                    response = client.post(
+                        "https://openrouter.ai/api/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {self.api_key}",
+                            "Content-Type": "application/json"
+                        },
+                        json={
+                            "model": model,
+                            "messages": msgs
+                        }
                     )
+                    response.raise_for_status()
+                    data = response.json()
                     print(f"✅ [OpenRouter] Sucesso com modelo: {model}")
                     return ChatResponse(
                         message=ChatMessage(
                             role="assistant", 
-                            content=response.choices[0].message.content
+                            content=data["choices"][0]["message"]["content"]
                         ),
                         additional_kwargs={"model_name": model}
                     )
             except Exception as e:
                 print(f"❌ [OpenRouter] Falha no modelo {model}: {e}")
+                last_error = e
+        
+        raise last_error or RuntimeError("Todos os modelos do OpenRouter falharam.")
+
+    async def _achat(self, messages: List[ChatMessage], **kwargs: Any) -> ChatResponse:
+        msgs = [{"role": m.role.value, "content": m.content} for m in messages]
+        last_error = None
+        for model in self.models:
+            try:
+                print(f"🚀 [OpenRouter] Tentando modelo (achat): {model}...")
+                async with httpx.AsyncClient(timeout=Settings.LLM_TIMEOUT) as client:
+                    response = await client.post(
+                        "https://openrouter.ai/api/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {self.api_key}",
+                            "Content-Type": "application/json"
+                        },
+                        json={
+                            "model": model,
+                            "messages": msgs
+                        }
+                    )
+                    response.raise_for_status()
+                    data = response.json()
+                    print(f"✅ [OpenRouter] Sucesso com modelo (async): {model}")
+                    return ChatResponse(
+                        message=ChatMessage(
+                            role="assistant", 
+                            content=data["choices"][0]["message"]["content"]
+                        ),
+                        additional_kwargs={"model_name": model}
+                    )
+            except Exception as e:
+                print(f"❌ [OpenRouter] Falha no modelo {model} (async): {e}")
                 last_error = e
         
         raise last_error or RuntimeError("Todos os modelos do OpenRouter falharam.")
@@ -93,8 +177,14 @@ class OpenRouterLLM(CustomLLM):
     def complete(self, prompt: str, **kwargs: Any) -> CompletionResponse:
         return self._complete(prompt, **kwargs)
 
+    async def acomplete(self, prompt: str, **kwargs: Any) -> CompletionResponse:
+        return await self._acomplete(prompt, **kwargs)
+
     def chat(self, messages: List[ChatMessage], **kwargs: Any) -> ChatResponse:
         return self._chat(messages, **kwargs)
+
+    async def achat(self, messages: List[ChatMessage], **kwargs: Any) -> ChatResponse:
+        return await self._achat(messages, **kwargs)
 
     def stream_complete(self, prompt: str, **kwargs: Any):
         return self._stream_complete(prompt, **kwargs)
@@ -139,6 +229,27 @@ class FallbackLLM(CustomLLM):
                 res.additional_kwargs["model_name"] = f"ollama/{self.fallback.model}"
             return res
 
+    async def _acomplete(self, prompt: str, **kwargs: Any) -> CompletionResponse:
+        if self.fallback_count >= self.max_fallbacks:
+            print(f"🔄 [LLM] Limite de falhas atingido ({self.fallback_count}/{self.max_fallbacks}). Usando fallback (async) diretamente.")
+            res = await self.fallback.acomplete(prompt, **kwargs)
+            if "model_name" not in res.additional_kwargs:
+                res.additional_kwargs["model_name"] = f"ollama/{self.fallback.model}"
+            return res
+
+        try:
+            res = await self.primary.acomplete(prompt, **kwargs)
+            if "model_name" not in res.additional_kwargs:
+                res.additional_kwargs["model_name"] = self.primary.metadata.model_name
+            return res
+        except Exception as e:
+            self.fallback_count += 1
+            print(f"⚠️ [LLM] Falha total no provedor primário (async) ({self.fallback_count}/{self.max_fallbacks}), usando fallback...")
+            res = await self.fallback.acomplete(prompt, **kwargs)
+            if "model_name" not in res.additional_kwargs:
+                res.additional_kwargs["model_name"] = f"ollama/{self.fallback.model}"
+            return res
+
     def _chat(self, messages: List[ChatMessage], **kwargs: Any) -> ChatResponse:
         if self.fallback_count >= self.max_fallbacks:
             print(f"🔄 [LLM] Limite de falhas atingido ({self.fallback_count}/{self.max_fallbacks}). Usando fallback diretamente.")
@@ -156,6 +267,27 @@ class FallbackLLM(CustomLLM):
             self.fallback_count += 1
             print(f"⚠️ [LLM] Falha total no provedor primário ({self.fallback_count}/{self.max_fallbacks}), usando fallback (Ollama/Local)...")
             res = self.fallback.chat(messages, **kwargs)
+            if "model_name" not in res.additional_kwargs:
+                res.additional_kwargs["model_name"] = f"ollama/{self.fallback.model}"
+            return res
+
+    async def _achat(self, messages: List[ChatMessage], **kwargs: Any) -> ChatResponse:
+        if self.fallback_count >= self.max_fallbacks:
+            print(f"🔄 [LLM] Limite de falhas atingido ({self.fallback_count}/{self.max_fallbacks}). Usando fallback (async) diretamente.")
+            res = await self.fallback.achat(messages, **kwargs)
+            if "model_name" not in res.additional_kwargs:
+                res.additional_kwargs["model_name"] = f"ollama/{self.fallback.model}"
+            return res
+
+        try:
+            res = await self.primary.achat(messages, **kwargs)
+            if "model_name" not in res.additional_kwargs:
+                res.additional_kwargs["model_name"] = self.primary.metadata.model_name
+            return res
+        except Exception as e:
+            self.fallback_count += 1
+            print(f"⚠️ [LLM] Falha total no provedor primário (async) ({self.fallback_count}/{self.max_fallbacks}), usando fallback...")
+            res = await self.fallback.achat(messages, **kwargs)
             if "model_name" not in res.additional_kwargs:
                 res.additional_kwargs["model_name"] = f"ollama/{self.fallback.model}"
             return res
@@ -185,8 +317,14 @@ class FallbackLLM(CustomLLM):
     def complete(self, prompt: str, **kwargs: Any) -> CompletionResponse:
         return self._complete(prompt, **kwargs)
 
+    async def acomplete(self, prompt: str, **kwargs: Any) -> CompletionResponse:
+        return await self._acomplete(prompt, **kwargs)
+
     def chat(self, messages: List[ChatMessage], **kwargs: Any) -> ChatResponse:
         return self._chat(messages, **kwargs)
+
+    async def achat(self, messages: List[ChatMessage], **kwargs: Any) -> ChatResponse:
+        return await self._achat(messages, **kwargs)
 
     def stream_complete(self, prompt: str, **kwargs: Any):
         return self._stream_complete(prompt, **kwargs)
@@ -197,11 +335,11 @@ class FallbackLLM(CustomLLM):
 class LLMClient:
 
     def __init__(self):
-        self._llm = None
+        self._llms = {}  # Cache de instâncias por provedor
         self._embedding = None
         self._initialized = False
 
-    def _init_llm(self):
+    def _init_llm(self, provider: str):
         # Ollama sempre como fallback ou provedor principal direto
         ollama_llm = Ollama(
             model=Settings.LLM_MODEL,
@@ -209,11 +347,11 @@ class LLMClient:
             request_timeout=Settings.LLM_TIMEOUT,
         )
 
-        if Settings.LLM_PROVIDER == "ollama":
-            print(f"🏠 [LLM] Provedor configurado: Ollama (Modelo: {Settings.LLM_MODEL})")
+        if provider == "ollama":
+            print(f"🏠 [LLM] Inicializando Ollama (Modelo: {Settings.LLM_MODEL})")
             return ollama_llm
         
-        if Settings.LLM_PROVIDER == "openrouter":
+        if provider == "openrouter":
             if not Settings.OPENROUTER_API_KEY:
                 print("⚠️ [LLM] OPENROUTER_API_KEY não configurada. Usando Ollama como fallback direto.")
                 return ollama_llm
@@ -227,10 +365,10 @@ class LLMClient:
                 api_key=Settings.OPENROUTER_API_KEY,
                 models=models
             )
-            print(f"🌐 [LLM] Provedor configurado: OpenRouter (Multi-model Fallback) + Ollama")
+            print(f"🌐 [LLM] Inicializando OpenRouter (Multi-model Fallback) + Ollama")
             return FallbackLLM(primary=primary, fallback=ollama_llm)
 
-        raise ValueError(f"LLM provider não suportado: {Settings.LLM_PROVIDER}")
+        raise ValueError(f"LLM provider não suportado: {provider}")
 
     def _init_embedding(self):
         # Por enquanto mantemos embedding local no Ollama por performance/custo
@@ -239,10 +377,25 @@ class LLMClient:
             base_url=Settings.LLM_BASE_URL,
         )
 
-    def get_llm(self):
-        if self._llm is None:
-            self._llm = self._init_llm()
-        return self._llm
+    def get_llm(self, task: str = "general"):
+        """
+        Retorna a instância do LLM adequada para a tarefa solicitada.
+        Tasks: 'enrichment', 'insights', 'rag', 'general'
+        """
+        # Mapeamento de task para o provider configurado
+        provider_map = {
+            "enrichment": Settings.ENRICHMENT_LLM_PROVIDER,
+            "insights": Settings.INSIGHTS_LLM_PROVIDER,
+            "rag": Settings.RAG_LLM_PROVIDER,
+            "general": Settings.LLM_PROVIDER
+        }
+        
+        provider = provider_map.get(task, Settings.LLM_PROVIDER)
+        
+        if provider not in self._llms:
+            self._llms[provider] = self._init_llm(provider)
+            
+        return self._llms[provider]
 
     def get_embedding(self):
         if self._embedding is None:

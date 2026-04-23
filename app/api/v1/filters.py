@@ -14,7 +14,7 @@ class FilterRequest(BaseModel):
 
 
 @router.post("/")
-async def get_filters(request: FilterRequest):
+def get_filters(request: FilterRequest):
     """
     Descobre os filtros disponíveis para uma ingestão específica.
 

@@ -7,6 +7,7 @@ from app.service.metrics.base import Metric
 from app.service.metrics.evolucao_temporal import criar_evolucao_temporal
 
 from app.service.filter import FilterService, FilterParams
+from app.core.cache import backend_cache
 
 
 # Métricas concretas
@@ -61,6 +62,7 @@ class MetricsService:
     # -------------------------
     # COMPUTAR MÉTRICAS
     # -------------------------
+    @backend_cache(ttl=300)
     def compute(
         self,
         data_artifact: DataArtifact,
@@ -96,6 +98,7 @@ class MetricsService:
     # -------------------------
     # EVOLUÇÃO TEMPORAL
     # -------------------------
+    @backend_cache(ttl=300)
     def compute_temporal(
         self,
         data_artifact: DataArtifact,

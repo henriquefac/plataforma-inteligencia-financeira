@@ -11,7 +11,7 @@ class ServiceTypeFeature(BaseFeature):
     def classify(self, text: str, values: list[str]) -> str:
         prompt = build_service_type_prompt(text, values)
 
-        response = llm_client.get_llm().complete(prompt=prompt)
+        response = llm_client.get_llm(task="enrichment").complete(prompt=prompt)
         result = response.text.strip()
 
         values_lower = [v.lower() for v in values]

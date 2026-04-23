@@ -34,7 +34,7 @@ async def generate_insights(request: InsightsRequest):
     try:
         dados = DataArtifact.load(request.ingestion_id)
         
-        result = insights_service.generate_insights(
+        result = await insights_service.generate_insights(
             data_artifact=dados,
             filter_params=request.filter_criteria
         )
@@ -58,7 +58,7 @@ async def detect_anomalies(request: InsightsRequest):
     try:
         dados = DataArtifact.load(request.ingestion_id)
         
-        result = insights_service.detect_anomalies(
+        result = await insights_service.detect_anomalies(
             data_artifact=dados,
             filter_params=request.filter_criteria
         )
