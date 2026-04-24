@@ -1,4 +1,4 @@
-# Vicio Vaga - Backend (Inteligência Financeira)
+# Backend (Inteligência Financeira)
 
 Este é o motor da plataforma de Inteligência Financeira, construído para processar dados transacionais, calcular métricas de negócio e fornecer insights baseados em IA através de uma abordagem de Agente Analítico.
 
