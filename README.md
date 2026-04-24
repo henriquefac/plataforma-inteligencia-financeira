@@ -21,7 +21,7 @@ Devido à natureza do Streamlit (frontend) de recarregar a página a cada intera
 - **TTL (Time To Live)**: Resultados de processamentos custosos (como insights de IA e queries analíticas) são cacheados em memória por um tempo determinado.
 - **Eficiência**: Reduz drasticamente os custos de API de LLM e o tempo de resposta para o usuário final.
 
-## 🛠️ Tecnologias Principais
+## Tecnologias Principais
 
 - **FastAPI**: Framework web.
 - **Pandas/PyArrow**: Processamento de dados e armazenamento em Parquet.
