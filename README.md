@@ -24,7 +24,7 @@ Devido à natureza do Streamlit (frontend) de recarregar a página a cada intera
 ## Tecnologias Principais
 
 - **FastAPI**: Framework web.
-- **Pandas/PyArrow**: Processamento de dados e armazenamento em Parquet.
+- **Pandas/PyArrow**: Processamento de dados e armazenamento em csv.
 - **LlamaIndex**: Orquestração da lógica do agente e integração com LLMs.
 - **Ollama & OpenRouter**: Provedores de modelos de linguagem (IA).
 - **Pydantic Settings**: Gestão de configurações via `.env`.
