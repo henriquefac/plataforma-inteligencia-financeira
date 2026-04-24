@@ -55,24 +55,3 @@ async def analytics_interpret(request: QueryRequest):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/{ingestion_id}/index")
-def build_index(ingestion_id: str):
-    """
-    Força a (re)construção do índice vetorial para uma ingestão.
-    """
-    try:
-        rag_indexer.build_index(ingestion_id)
-        return {
-            "ingestion_id": ingestion_id,
-            "status": "indexed",
-            "message": "Índice construído com sucesso",
-        }
-
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
